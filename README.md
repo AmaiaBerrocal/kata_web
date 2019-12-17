@@ -3,7 +3,7 @@
 1. Instalar las dependencias del fichero requirements.txt
 
 ```
-pip install -r requirements
+pip install -r requirements.txt
 ```
 
 2. Crear la variable de entorno `FLASK_APP` con el valor `hello.py`
