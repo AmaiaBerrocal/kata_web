@@ -2,38 +2,48 @@ from myapp import app
 from flask import render_template
 import csv
 
+fSales = open('./data/sales10.csv', 'r') # abrir fichero en modo lectura
+csvreader = csv.reader(fSales, delimiter=',') # creo un lector de csv para el fichero sales con la coma como delimitador
+
+registros = [] #va a ser una lista de tuplas
+for linea in csvreader: #recorro cada línea de csvreader, separando sus componentes por las comas, haciendo una lista con cada línea
+    registros.append(linea) #añado cada lista (cada línea) a resgistros
+
+cabecera = registros[0]
+ventas = []
+for datos in registros[1:]:
+    d = {}
+    for ix, nombre_campo in enumerate(cabecera):
+        d[nombre_campo] = datos[ix]    
+    ventas.append(d)
+
 @app.route('/')
-def index():
-    fSales = open('../sales10.csv', 'r')
-    csvreader = csv.reader(fSales, delimiter=',')
-    registros = []
-    for linea in csvreader:
-        registros.append(linea)
+def index():  
+    datos = {}
+    for linea in ventas:
+        if linea['region'] in datos:
+            regAct = datos[linea['region']]
+            regAct['ingresos_totales'] += float(linea['ingresos_totales'])
+            regAct['beneficios_totales'] += float(linea['beneficio'])
+        else:
+            datos[linea['region']] = {'ingresos_totales': float(linea['ingresos_totales']), 'beneficios_totales': float(linea['beneficio'])}
+    
+    resultado = [] #recorro datos, obtengo la clave y creo una tupla con clave-valor. Resultados es una lista de tuplas.
+    for clave in datos:
+        resultado.append((clave, datos[clave]))
+    
+    return render_template('index.html', registros=resultado)
 
-    cabecera = registros[0]
-    ventas = []
-    for datos in registros[1:]:
-        d = {}
-        for ix, nombre_campo in enumerate(cabecera): #delego todo el control en python
-            d[nombre_campo] = datos[ix]    
-        ventas.append(d)
-        '''
-        otras formas de hacer lo mismo
-        i = 0
-        for nombre_campo in cabecera: #delego el control del nombre y yo llevo el indice
-            d[nombre_campo] = datos[i]
-            i += 1
-        
-        for ix in range (len(cabecera)): #delego el control del indice y yo llevo el nombre
-            nombre_campo = cabecera[ix]
-            d[nombre_campo]= datos [ix]
-        '''   
-        resultado = [] #lista de diccionarios
-        '''
-        recorrer el diccionario creando uno nuevo con region, ingresos totales y beneficios totales
-        '''
-    return render_template('index.html', registros=resultados)
+@app.route("/detail/<region_name>")
+def detail(region_name):
+    datos = {}
+    for linea in ventas:
+        if linea['region'] == region_name:
+            if linea['pais'] in datos:
+                regAct = datos[linea['pais']]
+                regAct['ingresos_totales'] += float(linea['ingresos_totales'])
+                regAct['beneficios_totales'] += float(linea['beneficio'])
+            else:
+                datos[linea['pais']] = {'ingresos_totales': float(linea['ingresos_totales']), 'beneficios_totales': float(linea['beneficio'])}
 
-@app.route("/detail")
-def detail():
-    return render_template('detail.html')
+    return render_template('detail.html', region=region_name, registros=datos)
